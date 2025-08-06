@@ -6,10 +6,6 @@ SSH_PORT="22"  # Change this if you use a non-standard SSH port
 EDITOR="vim"
 RUNTIMES=("openjdk-21-jdk")  # Add other runtimes here if needed
 
-# NGINX configuration
-DOMAIN_NAME="example.com"  # Change this to your domain or use the IP
-EMAIL="admin@example.com"  # For Let's Encrypt notifications
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -36,7 +32,7 @@ echo -e "${YELLOW}Installing Nginx...${NC}"
 apt install software-properties-common
 add-apt-repository ppa:ondrej/nginx
 apt update
-apt install nginx-full
+apt install -y nginx-full
 
 # Setup UFW firewall
 echo -e "${YELLOW}Configuring UFW firewall...${NC}"
@@ -178,19 +174,13 @@ echo -e "Here's what was done:"
 echo -e "  - Updated system packages"
 echo -e "  - Installed and configured:"
 echo -e "    * Docker for containers"
-echo -e "    * NGINX with HTTPS (${DOMAIN_NAME})"
+echo -e "    * NGINX with HTTPS"
 echo -e "    * UFW firewall (SSH and NGINX ports open)"
 echo -e "    * Vim as default editor"
 echo -e "    * OpenJDK 21 for Clojure development"
 echo -e "  - Created user '${NEW_USER}' with SSH access (if root had keys)"
 echo -e "  - Installed and configured tmux"
 echo -e "  - Set up Clojure environment with rebel-readline"
-
-if [ "$DOMAIN_NAME" != "example.com" ]; then
-    echo -e "\nYou can now visit https://${DOMAIN_NAME} to see the NGINX welcome page"
-else
-    echo -e "\nYou can now visit your server's IP address (with HTTPS) to see the NGINX welcome page"
-    echo -e "Note: Your browser will show a security warning because we're using a self-signed certificate"
-fi
-
+echo -e "\nYou can now visit your server's IP address (with HTTPS) to see the NGINX welcome page"
+echo -e "Note: Your browser will show a security warning because we're using a self-signed certificate"
 echo -e "\nYou can login as ${NEW_USER} and use tmux for your development sessions."
