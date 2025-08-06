@@ -1,0 +1,4 @@
+{:aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.5"}}
+                   :exec-fn rebel-readline.tool/repl
+                   :exec-args {:key-map :viins}
+                   :main-opts ["-m" "rebel-readline.main"]}}}
