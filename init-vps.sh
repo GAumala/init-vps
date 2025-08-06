@@ -31,6 +31,13 @@ apt-get upgrade -y
 echo -e "${YELLOW}Installing essential packages...${NC}"
 apt-get install -y curl git ufw
 
+# Install Nginx
+echo -e "${YELLOW}Installing Nginx...${NC}"
+apt install software-properties-common
+add-apt-repository ppa:ondrej/nginx
+apt update
+apt install nginx-full
+
 # Setup UFW firewall
 echo -e "${YELLOW}Configuring UFW firewall...${NC}"
 ufw allow "$SSH_PORT"
@@ -38,6 +45,7 @@ ufw allow 'Nginx Full'  # Allows both HTTP (80) and HTTPS (443)
 ufw --force enable
 
 # install certbot
+echo -e "${YELLOW}Installing certbot for Nginx...${NC}"
 snap install --classic certbot
 ln -s /snap/bin/certbot /usr/bin/certbot
 
@@ -58,7 +66,7 @@ echo -e "${YELLOW}Creating $NEW_USER user...${NC}"
 if id "$NEW_USER" &>/dev/null; then
     echo -e "${YELLOW}User $NEW_USER already exists, skipping creation.${NC}"
 else
-    adduser --create-home --disabled-password --gecos "" "$NEW_USER"
+    adduser --disabled-password --gecos "" "$NEW_USER"
 fi
 
 # Install and configure Vim for both root and appdev
