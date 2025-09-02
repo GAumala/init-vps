@@ -27,6 +27,12 @@ apt-get upgrade -y
 echo -e "${YELLOW}Installing essential packages...${NC}"
 apt-get install -y curl git ufw
 
+# Install clojure
+echo -e "${YELLOW}Installing Clojure...${NC}"
+curl -L -O https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh
+chmod +x linux-install.sh
+sudo ./linux-install.sh
+
 # Install Nginx
 echo -e "${YELLOW}Installing Nginx...${NC}"
 apt install software-properties-common
@@ -159,10 +165,10 @@ fi
 echo -e "${YELLOW}Setting up Clojure environment...${NC}"
 mkdir -p /home/$NEW_USER/.config/clojure
 if [ -f ./new-user.edn ]; then
-    cp ./new-user.edn /home/$NEW_USER/.config/clojure/
+    cp ./new-user.edn /home/$NEW_USER/.clojure/deps.edn
 else
     # Minimal deps.edn with rebel-readline
-    cat > /home/$NEW_USER/.config/clojure/deps.edn << 'EOL'
+    cat > ./new-user.edn /home/$NEW_USER/.clojure/deps.edn << 'EOL'
 {:aliases
  {:repl {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
          :main-opts ["-m" "rebel-readline.main"]}}
