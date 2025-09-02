@@ -36,6 +36,8 @@ apt install -y nginx-full
 
 # Setup UFW firewall
 echo -e "${YELLOW}Configuring UFW firewall...${NC}"
+ufw default deny incoming
+ufw default allow outgoing
 ufw allow "$SSH_PORT"
 ufw allow 'Nginx Full'  # Allows both HTTP (80) and HTTPS (443)
 ufw --force enable
