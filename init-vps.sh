@@ -31,7 +31,7 @@ apt-get install -y curl git ufw
 echo -e "${YELLOW}Installing Clojure...${NC}"
 curl -L -O https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh
 chmod +x linux-install.sh
-sudo ./linux-install.sh
+./linux-install.sh
 
 # Install Nginx
 echo -e "${YELLOW}Installing Nginx...${NC}"
