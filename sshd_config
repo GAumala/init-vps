@@ -1,5 +1,5 @@
 # === SECURITY HARDENING ===
-Port 22
+Port SSH_PORT
 Protocol 2
 
 # DISABLE root login
@@ -14,7 +14,7 @@ ChallengeResponseAuthentication no
 PubkeyAuthentication yes
 
 # RESTRICT users
-AllowUsers your_username
+AllowUsers NEW_USER root
 
 # SECURITY LIMITS
 MaxAuthTries 3

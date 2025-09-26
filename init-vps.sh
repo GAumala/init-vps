@@ -5,6 +5,8 @@ NEW_USER="appdev"
 SSH_PORT="22"  # Change this if you use a non-standard SSH port
 EDITOR="vim"
 RUNTIMES=("openjdk-21-jdk")  # Add other runtimes here if needed
+BACKEND_URL=""  # Set to backend URL if you have one (e.g., "http://localhost:3000"), leave empty for static-only
+SERVER_DOMAIN=""  # Set to your domain name (e.g., "example.com"), leave empty for default
 
 # Colors for output
 RED='\033[0;31m'
@@ -40,7 +42,7 @@ echo -e "${YELLOW}Updating package list and upgrading packages...${NC}"
 apt-get update
 apt-get upgrade -y
 
-# Install essential packages
+# Install essential packag/es
 echo -e "${YELLOW}Installing essential packages...${NC}"
 apt-get install -y curl git ufw fail2ban zsh
 
@@ -79,6 +81,56 @@ cp ./jail.local /etc/fail2ban/jail.local
 systemctl enable fail2ban
 systemctl start fail2ban
 echo -e "${GREEN}fail2ban configured and started${NC}"
+
+# Configure nginx with complete configuration
+echo -e "${YELLOW}Configuring nginx with complete configuration...${NC}"
+
+# Create backups
+mkdir -p /etc/nginx-backup
+chmod 700 /etc/nginx-backup
+cp /etc/nginx/nginx.conf /etc/nginx-backup/nginx.conf
+cp /etc/nginx/sites-available/default /etc/nginx-backup/default
+
+# Replace main nginx configuration
+if [ -f ./nginx.conf ]; then
+    cp ./nginx.conf /etc/nginx/nginx.conf
+    echo -e "${GREEN}Main nginx configuration updated${NC}"
+fi
+
+# Replace default site configuration
+if [ -f ./sites-available-default ]; then
+    cp ./sites-available-default /etc/nginx/sites-available/default
+    
+    # Configure server domain if set
+    if [ -n "$SERVER_DOMAIN" ]; then
+        echo -e "${YELLOW}Configuring nginx with domain: $SERVER_DOMAIN${NC}"
+        sed -i "s|server_name _;|server_name $SERVER_DOMAIN;|" /etc/nginx/sites-available/default
+    else
+        echo -e "${YELLOW}No domain configured, using default server name${NC}"
+    fi
+    
+    # Configure backend URL if set
+    if [ -n "$BACKEND_URL" ]; then
+        echo -e "${YELLOW}Configuring nginx with backend proxy to: $BACKEND_URL${NC}"
+        sed -i "s|BACKEND_URL_PLACEHOLDER|$BACKEND_URL|g" /etc/nginx/sites-available/default
+    else
+        echo -e "${YELLOW}No backend URL configured, using static-only nginx configuration${NC}"
+        # Remove backend proxy configuration for static-only setup
+        sed -i '/location \/api\/ {/,/}/d' /etc/nginx/sites-available/default
+        sed -i '/location \/login {/,/}/d' /etc/nginx/sites-available/default
+    fi
+    
+    echo -e "${GREEN}Default site configuration updated${NC}"
+fi
+
+# Test and reload nginx configuration
+if nginx -t; then
+    systemctl reload nginx
+    echo -e "${GREEN}Nginx configuration updated successfully${NC}"
+else
+    echo -e "${RED}Nginx configuration test failed${NC}"
+    exit 1
+fi
 
 # Install docker via script
 echo -e "${YELLOW}Installing docker...${NC}"
@@ -174,11 +226,24 @@ echo -e "${YELLOW}Setting zsh as default shell...${NC}"
 chsh -s /bin/zsh root
 chsh -s /bin/zsh "$NEW_USER"
 
+# Lock root account password to prevent password-based access
+echo -e "${YELLOW}Locking root account password...${NC}"
+passwd -l root
+
 # Setup Clojure environment
 echo -e "${YELLOW}Setting up Clojure environment...${NC}"
 mkdir -p /home/$NEW_USER/.clojure
 cp ./new-user.edn /home/$NEW_USER/.clojure/deps.edn
 chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.clojure
+
+# Apply additional security hardening
+echo -e "${YELLOW}Applying additional security hardening...${NC}"
+if [ -f ./security-hardening.sh ]; then
+    chmod +x ./security-hardening.sh
+    ./security-hardening.sh
+else
+    echo -e "${YELLOW}No security-hardening.sh found, skipping additional hardening${NC}"
+fi
 
 # Final message
 echo -e "${GREEN}Setup complete!${NC}"
