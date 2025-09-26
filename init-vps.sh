@@ -18,6 +18,23 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Check if SSH keys are configured before securing SSH
+echo -e "${YELLOW}Checking SSH key configuration...${NC}"
+if [ ! -f /root/.ssh/authorized_keys ] || [ ! -s /root/.ssh/authorized_keys ]; then
+    echo -e "${RED}ERROR: No SSH keys found in /root/.ssh/authorized_keys${NC}"
+    echo -e "${RED}Please add your SSH public key to /root/.ssh/authorized_keys before running this script${NC}"
+    echo -e "${RED}This script will disable password authentication and root login, so SSH keys are required${NC}"
+    exit 1
+fi
+
+# Secure SSH configuration
+echo -e "${YELLOW}Securing SSH configuration...${NC}"
+sed "s/SSH_PORT/$SSH_PORT/g; s/NEW_USER/$NEW_USER/g" ./sshd_config > /etc/ssh/sshd_config
+
+# Restart SSH service to apply new configuration
+echo -e "${YELLOW}Restarting SSH service to apply new configuration...${NC}"
+systemctl restart sshd
+
 # Update package list and upgrade existing packages
 echo -e "${YELLOW}Updating package list and upgrading packages...${NC}"
 apt-get update
@@ -25,7 +42,7 @@ apt-get upgrade -y
 
 # Install essential packages
 echo -e "${YELLOW}Installing essential packages...${NC}"
-apt-get install -y curl git ufw
+apt-get install -y curl git ufw fail2ban zsh
 
 # Install clojure
 echo -e "${YELLOW}Installing Clojure...${NC}"
@@ -56,6 +73,13 @@ ln -s /snap/bin/certbot /usr/bin/certbot
 # config Nginx to get a certificate with certbot
 certbot --nginx
 
+# Configure fail2ban
+echo -e "${YELLOW}Configuring fail2ban...${NC}"
+cp ./jail.local /etc/fail2ban/jail.local
+systemctl enable fail2ban
+systemctl start fail2ban
+echo -e "${GREEN}fail2ban configured and started${NC}"
+
 # Install docker via script
 echo -e "${YELLOW}Installing docker...${NC}"
  curl -fsSL https://get.docker.com -o get-docker.sh
@@ -85,23 +109,7 @@ setup_vim_config() {
     # Determine the right config file location
     local vimrc_path="$home_dir/.vimrc"
 
-    if [ -f ./server.vim ]; then
-        cp ./server.vim "$vimrc_path"
-    else
-        # Minimal Vim config if local file not found
-        cat > "$vimrc_path" << 'EOL'
-syntax on
-set tabstop=4
-set shiftwidth=4
-set expandtab
-set number
-set hlsearch
-set backspace=indent,eol,start
-set nobackup
-set nowritebackup
-set noswapfile
-EOL
-    fi
+    cp ./server.vim "$vimrc_path"
 
     # Set proper ownership if not root
     if [ "$user" != "root" ]; then
@@ -135,60 +143,60 @@ fi
 echo -e "${YELLOW}Setting up tmux...${NC}"
 apt-get install -y tmux
 
-if [ -f ./tmux.conf ]; then
-    cp ./tmux.conf /home/$NEW_USER/.tmux.conf
-    chown $NEW_USER:$NEW_USER /home/$NEW_USER/.tmux.conf
-else
-    # Minimal tmux config if local file not found
-    cat > /home/$NEW_USER/.tmux.conf << 'EOL'
-# Enable mouse mode
-set -g mouse on
+cp ./tmux.conf /home/$NEW_USER/.tmux.conf
+chown $NEW_USER:$NEW_USER /home/$NEW_USER/.tmux.conf
 
-# Set easier window split keys
-bind-key v split-window -h
-bind-key h split-window -v
+# Setup zsh configuration
+echo -e "${YELLOW}Setting up zsh configuration...${NC}"
 
-# Easy config reload
-bind-key r source-file ~/.tmux.conf \; display-message "tmux.conf reloaded"
+# Function to setup zsh config
+setup_zsh_config() {
+    local user=$1
+    local home_dir=$2
 
-# Enable 256 colors
-set -g default-terminal "screen-256color"
+    cp ./server.zshrc "$home_dir/.zshrc"
 
-# Start windows and panes at 1, not 0
-set -g base-index 1
-setw -g pane-base-index 1
-EOL
-    chown $NEW_USER:$NEW_USER /home/$NEW_USER/.tmux.conf
-fi
+    # Set proper ownership if not root
+    if [ "$user" != "root" ]; then
+        chown "$user:$user" "$home_dir/.zshrc"
+    fi
+    chmod 644 "$home_dir/.zshrc"
+}
+
+# Setup zsh for root
+setup_zsh_config "root" "/root"
+
+# Setup zsh for appdev
+setup_zsh_config "$NEW_USER" "/home/$NEW_USER"
+
+# Change default shell to zsh for both users
+echo -e "${YELLOW}Setting zsh as default shell...${NC}"
+chsh -s /bin/zsh root
+chsh -s /bin/zsh "$NEW_USER"
 
 # Setup Clojure environment
 echo -e "${YELLOW}Setting up Clojure environment...${NC}"
-mkdir -p /home/$NEW_USER/.config/clojure
-if [ -f ./new-user.edn ]; then
-    cp ./new-user.edn /home/$NEW_USER/.clojure/deps.edn
-else
-    # Minimal deps.edn with rebel-readline
-    cat > ./new-user.edn /home/$NEW_USER/.clojure/deps.edn << 'EOL'
-{:aliases
- {:repl {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
-         :main-opts ["-m" "rebel-readline.main"]}}
-EOL
-fi
-chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.config
+mkdir -p /home/$NEW_USER/.clojure
+cp ./new-user.edn /home/$NEW_USER/.clojure/deps.edn
+chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.clojure
 
 # Final message
 echo -e "${GREEN}Setup complete!${NC}"
 echo -e "Here's what was done:"
 echo -e "  - Updated system packages"
+echo -e "  - Secured SSH configuration (disabled root login, password auth, restricted to ${NEW_USER})"
 echo -e "  - Installed and configured:"
 echo -e "    * Docker for containers"
-echo -e "    * NGINX with HTTPS"
+echo -e "    * NGINX with HTTPS (certbot configured)"
 echo -e "    * UFW firewall (SSH and NGINX ports open)"
-echo -e "    * Vim as default editor"
+echo -e "    * fail2ban for intrusion prevention"
+echo -e "    * Vim as default editor with custom config"
+echo -e "    * zsh as default shell with enhanced history and completion"
+echo -e "    * tmux for session management"
 echo -e "    * OpenJDK 21 for Clojure development"
-echo -e "  - Created user '${NEW_USER}' with SSH access (if root had keys)"
-echo -e "  - Installed and configured tmux"
+echo -e "  - Created user '${NEW_USER}' with SSH access"
 echo -e "  - Set up Clojure environment with rebel-readline"
 echo -e "\nYou can now visit your server's IP address (with HTTPS) to see the NGINX welcome page"
 echo -e "Note: Your browser will show a security warning because we're using a self-signed certificate"
 echo -e "\nYou can login as ${NEW_USER} and use tmux for your development sessions."
+echo -e "The server is now secured with SSH key-only access, fail2ban protection, and a hardened configuration."
