@@ -6,7 +6,8 @@ SSH_PORT="22"  # Change this if you use a non-standard SSH port
 EDITOR="vim"
 RUNTIMES=("openjdk-21-jdk")  # Add other runtimes here if needed
 BACKEND_URL=""  # Set to backend URL if you have one (e.g., "http://localhost:3000"), leave empty for static-only
-SERVER_DOMAIN=""  # Set to your domain name (e.g., "example.com"), leave empty for default
+DOMAIN=""  # Set to your domain name (e.g., "example.com"), leave empty for default
+USE_WWW=false  # Set to true to also use www.domain.com
 
 # Colors for output
 RED='\033[0;31m'
@@ -72,8 +73,8 @@ echo -e "${YELLOW}Installing certbot for Nginx...${NC}"
 snap install --classic certbot
 ln -s /snap/bin/certbot /usr/bin/certbot
 
-# config Nginx to get a certificate with certbot
-certbot --nginx
+# Note: SSL configuration will be handled after nginx configuration is set up
+echo -e "${YELLOW}SSL configuration will be set up after nginx configuration${NC}"
 
 # Configure fail2ban
 echo -e "${YELLOW}Configuring fail2ban...${NC}"
@@ -101,12 +102,21 @@ fi
 if [ -f ./sites-available-default ]; then
     cp ./sites-available-default /etc/nginx/sites-available/default
     
-    # Configure server domain if set
-    if [ -n "$SERVER_DOMAIN" ]; then
-        echo -e "${YELLOW}Configuring nginx with domain: $SERVER_DOMAIN${NC}"
-        sed -i "s|server_name _;|server_name $SERVER_DOMAIN;|" /etc/nginx/sites-available/default
+    # Configure server domains if set
+    if [ -n "$DOMAIN" ]; then
+        if [ "$USE_WWW" = true ]; then
+            SERVER_DOMAINS="$DOMAIN www.$DOMAIN"
+            echo -e "${YELLOW}Configuring nginx with domains: $SERVER_DOMAINS${NC}"
+        else
+            SERVER_DOMAINS="$DOMAIN"
+            echo -e "${YELLOW}Configuring nginx with domain: $SERVER_DOMAINS${NC}"
+        fi
+        sed -i "s|SERVER_DOMAINS_PLACEHOLDER|$SERVER_DOMAINS|" /etc/nginx/sites-available/default
+        sed -i "s|DOMAIN_PLACEHOLDER|$DOMAIN|g" /etc/nginx/sites-available/default
     else
         echo -e "${YELLOW}No domain configured, using default server name${NC}"
+        sed -i "s|SERVER_DOMAINS_PLACEHOLDER|_|" /etc/nginx/sites-available/default
+        sed -i "s|DOMAIN_PLACEHOLDER|yourdomain.com|g" /etc/nginx/sites-available/default
     fi
     
     # Configure backend URL if set
@@ -130,6 +140,16 @@ if nginx -t; then
 else
     echo -e "${RED}Nginx configuration test failed${NC}"
     exit 1
+fi
+
+# Run certbot to get SSL certificate (if domain is configured)
+if [ -n "$DOMAIN" ]; then
+    echo -e "${YELLOW}Running certbot to get SSL certificate for: $SERVER_DOMAINS${NC}"
+    echo -e "${YELLOW}Certbot will prompt you for email and domain confirmation${NC}"
+    certbot --nginx
+else
+    echo -e "${YELLOW}No domain configured - skipping SSL certificate setup${NC}"
+    echo -e "${YELLOW}To set up SSL later, run: certbot --nginx${NC}"
 fi
 
 # Install docker via script
