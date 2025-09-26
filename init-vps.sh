@@ -33,7 +33,7 @@ sed "s/SSH_PORT/$SSH_PORT/g; s/NEW_USER/$NEW_USER/g" ./sshd_config > /etc/ssh/ss
 
 # Restart SSH service to apply new configuration
 echo -e "${YELLOW}Restarting SSH service to apply new configuration...${NC}"
-systemctl restart sshd
+systemctl restart ssh
 
 # Update package list and upgrade existing packages
 echo -e "${YELLOW}Updating package list and upgrading packages...${NC}"
