@@ -1,29 +1,9 @@
 # Complete default site configuration with SSL and performance optimizations
 # This will replace /etc/nginx/sites-available/default
 
-# HTTP server block - redirects to HTTPS after SSL certificate is obtained
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    
-    server_name SERVER_DOMAINS_PLACEHOLDER;
-    
-    # Redirect HTTP to HTTPS (will be enabled after SSL certificate is obtained)
-    # return 301 https://$host$request_uri;
-    
-    # For initial setup, serve content directly
-    root /var/www/html;
-    index index.html index.htm index.nginx-debian.html;
-    
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-
-# HTTPS server block - main configuration
-server {
-    listen 443 ssl default_server;
-    listen [::]:443 ssl default_server;
     
     # Basic server settings
     root /var/www/html;
@@ -67,11 +47,12 @@ server {
         log_not_found off;
     }
     
-    # SSL configuration placeholders - replace with actual paths after running certbot
-    # ssl_certificate /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/privkey.pem;
-    # include /etc/letsencrypt/options-ssl-nginx.conf;
-    # ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    # SSL configuration will be added by certbot
+    # listen 443 ssl; # managed by Certbot
+    # ssl_certificate /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/fullchain.pem; # managed by Certbot
+    # ssl_certificate_key /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/privkey.pem; # managed by Certbot
+    # include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    # ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
     
     # Backend proxy configuration (only if BACKEND_URL is set)
     # This will be replaced by the init script based on BACKEND_URL variable
