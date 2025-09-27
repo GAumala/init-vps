@@ -39,7 +39,3 @@ autoload -U colors && colors
 
 # Simple prompt (minimal for server use)
 PROMPT='%F{green}%n@%m%f:%F{blue}%~%f$ '
-
-# autocomplete history
-bindkey '^[[A' history-beginning-search-backward
-bindkey '^[[B' history-beginning-search-forward
