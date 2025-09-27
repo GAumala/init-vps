@@ -79,6 +79,7 @@ echo -e "${YELLOW}SSL configuration will be set up after nginx configuration${NC
 # Configure fail2ban
 echo -e "${YELLOW}Configuring fail2ban...${NC}"
 cp ./jail.local /etc/fail2ban/jail.local
+cp ./nginx-401.conf /etc/fail2ban/filter.d/
 systemctl enable fail2ban
 systemctl start fail2ban
 echo -e "${GREEN}fail2ban configured and started${NC}"
@@ -101,7 +102,7 @@ fi
 # Replace default site configuration
 if [ -f ./sites-available-default ]; then
     cp ./sites-available-default /etc/nginx/sites-available/default
-    
+
     # Configure server domains if set
     if [ -n "$DOMAIN" ]; then
         if [ "$USE_WWW" = true ]; then
@@ -118,7 +119,7 @@ if [ -f ./sites-available-default ]; then
         sed -i "s|SERVER_DOMAINS_PLACEHOLDER|_|" /etc/nginx/sites-available/default
         sed -i "s|DOMAIN_PLACEHOLDER|yourdomain.com|g" /etc/nginx/sites-available/default
     fi
-    
+
     # Configure backend URL if set
     if [ -n "$BACKEND_URL" ]; then
         echo -e "${YELLOW}Configuring nginx with backend proxy to: $BACKEND_URL${NC}"
@@ -129,7 +130,7 @@ if [ -f ./sites-available-default ]; then
         sed -i '/location \/api\/ {/,/}/d' /etc/nginx/sites-available/default
         sed -i '/location \/login {/,/}/d' /etc/nginx/sites-available/default
     fi
-    
+
     echo -e "${GREEN}Default site configuration updated${NC}"
 fi
 

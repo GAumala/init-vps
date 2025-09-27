@@ -22,18 +22,21 @@ maxretry = 10
 findtime = 600
 bantime = 3600
 
-[nginx-noscript]
+[nginx-botsearch]
 enabled = true
 port = http,https
-logpath = /var/log/nginx/access.log
-maxretry = 6
-findtime = 600
-bantime = 86400
+logpath = /var/log/nginx/error.log
 
-[nginx-badbots]
+[nginx-bad-request]
 enabled = true
 port = http,https
 logpath = /var/log/nginx/access.log
-maxretry = 2
+
+[nginx-401]
+enabled = true
+port = http,https
+filter = nginx-401
+logpath = /var/log/nginx/access.log
+maxretry = 20
 findtime = 600
-bantime = 86400
+bantime = 7200
