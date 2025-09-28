@@ -266,6 +266,9 @@ else
     echo -e "${YELLOW}No security-hardening.sh found, skipping additional hardening${NC}"
 fi
 
+# set defaul branch "main" globally for appdev user
+sudo -u appdev git config --global init.defaultBranch main
+
 # Final message
 echo -e "${GREEN}Setup complete!${NC}"
 echo -e "Here's what was done:"

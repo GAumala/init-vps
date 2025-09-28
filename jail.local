@@ -25,7 +25,7 @@ bantime = 3600
 [nginx-botsearch]
 enabled = true
 port = http,https
-logpath = /var/log/nginx/error.log
+logpath = /var/log/nginx/access.log
 
 [nginx-bad-request]
 enabled = true
