@@ -8,6 +8,7 @@ bantime = 3600
 
 [nginx-http-auth]
 enabled = true
+backend = auto
 port = http,https
 logpath = /var/log/nginx/error.log
 maxretry = 3
@@ -16,6 +17,7 @@ bantime = 3600
 
 [nginx-limit-req]
 enabled = true
+backend = auto
 port = http,https
 logpath = /var/log/nginx/error.log
 maxretry = 10
@@ -24,16 +26,19 @@ bantime = 3600
 
 [nginx-botsearch]
 enabled = true
+backend = auto
 port = http,https
 logpath = /var/log/nginx/access.log
 
 [nginx-bad-request]
 enabled = true
+backend = auto
 port = http,https
 logpath = /var/log/nginx/access.log
 
 [nginx-401]
 enabled = true
+backend = auto
 port = http,https
 filter = nginx-401
 logpath = /var/log/nginx/access.log
