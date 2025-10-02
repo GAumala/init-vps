@@ -56,7 +56,7 @@ apt-get upgrade -y
 
 # Install essential packag/es
 echo -e "${YELLOW}Installing essential packages...${NC}"
-apt-get install -y curl git ufw fail2ban nginx certbot python3-certbot-nginx vim ca-certificates
+apt-get install -y curl git ufw fail2ban nginx certbot python3-certbot-nginx vim ca-certificates tmux zsh
 
 echo -e "${YELLOW}Installing docker packages...${NC}"
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -165,10 +165,12 @@ echo -e "${YELLOW}Creating $NEW_USER user...${NC}"
 if id "$NEW_USER" &>/dev/null; then
     echo -e "${YELLOW}User $NEW_USER already exists, skipping creation.${NC}"
 else
-    adduser --disabled-password --gecos "" "$NEW_USER"
+    echo -e "${YELLOW}Creating $NEW_USER user...${NC}"
+    adduser --gecos "" "$NEW_USER"
 fi
-# Add appdev user to www-data group for web directory access
-usermod -a -G www-data $NEW_USER
+
+# Add appdev user to www-data and sudo groups
+usermod -a -G www-data,sudo $NEW_USER
 
 # Install and configure Vim for both root and appdev
 echo -e "${YELLOW}Setting up Vim...${NC}"
@@ -213,7 +215,6 @@ fi
 
 # Install and configure tmux for appdev user
 echo -e "${YELLOW}Setting up tmux...${NC}"
-apt-get install -y tmux
 
 cp ./tmux.conf /home/$NEW_USER/.tmux.conf
 chown $NEW_USER:$NEW_USER /home/$NEW_USER/.tmux.conf
@@ -284,7 +285,6 @@ echo -e "    * tmux for session management"
 echo -e "    * OpenJDK 21 for Clojure development"
 echo -e "  - Created user '${NEW_USER}' with SSH access"
 echo -e "  - Set up Clojure environment with rebel-readline"
-echo -e "\nYou can now visit your server's IP address (with HTTPS) to see the NGINX welcome page"
-echo -e "Note: Your browser will show a security warning because we're using a self-signed certificate"
+echo -e "\nYou can now visit your domain (with HTTPS) to see the NGINX welcome page"
 echo -e "\nYou can login as ${NEW_USER} and use tmux for your development sessions."
 echo -e "The server is now secured with SSH key-only access, fail2ban protection, and a hardened configuration."
