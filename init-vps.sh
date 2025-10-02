@@ -38,6 +38,17 @@ sed "s/SSH_PORT/$SSH_PORT/g; s/NEW_USER/$NEW_USER/g" ./sshd_config > /etc/ssh/ss
 echo -e "${YELLOW}Restarting SSH service to apply new configuration...${NC}"
 systemctl restart ssh
 
+# Add docker gpg key and repository
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
+
 # Update package list and upgrade existing packages
 echo -e "${YELLOW}Updating package list and upgrading packages...${NC}"
 apt-get update
@@ -45,20 +56,17 @@ apt-get upgrade -y
 
 # Install essential packag/es
 echo -e "${YELLOW}Installing essential packages...${NC}"
-apt-get install -y curl git ufw fail2ban zsh
+apt-get install -y curl git ufw fail2ban nginx certbot python3-certbot-nginx vim ca-certificates
 
+echo -e "${YELLOW}Installing docker packages...${NC}"
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+#
 # Install clojure
 echo -e "${YELLOW}Installing Clojure...${NC}"
 curl -L -O https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh
 chmod +x linux-install.sh
 ./linux-install.sh
-
-# Install Nginx
-echo -e "${YELLOW}Installing Nginx...${NC}"
-apt install software-properties-common
-add-apt-repository ppa:ondrej/nginx
-apt update
-apt install -y nginx-full
+rm ./linux-install.sh
 
 # Setup UFW firewall
 echo -e "${YELLOW}Configuring UFW firewall...${NC}"
@@ -67,11 +75,6 @@ ufw default allow outgoing
 ufw allow "$SSH_PORT"
 ufw allow 'Nginx Full'  # Allows both HTTP (80) and HTTPS (443)
 ufw --force enable
-
-# install certbot
-echo -e "${YELLOW}Installing certbot for Nginx...${NC}"
-snap install --classic certbot
-ln -s /snap/bin/certbot /usr/bin/certbot
 
 # Note: SSL configuration will be handled after nginx configuration is set up
 echo -e "${YELLOW}SSL configuration will be set up after nginx configuration${NC}"
@@ -153,11 +156,6 @@ else
     echo -e "${YELLOW}To set up SSL later, run: certbot --nginx${NC}"
 fi
 
-# Install docker via script
-echo -e "${YELLOW}Installing docker...${NC}"
- curl -fsSL https://get.docker.com -o get-docker.sh
- sh ./get-docker.sh
-
 # Install programming runtimes
 echo -e "${YELLOW}Installing programming runtimes...${NC}"
 apt-get install -y "${RUNTIMES[@]}"
@@ -169,10 +167,11 @@ if id "$NEW_USER" &>/dev/null; then
 else
     adduser --disabled-password --gecos "" "$NEW_USER"
 fi
+# Add appdev user to www-data group for web directory access
+usermod -a -G www-data $NEW_USER
 
 # Install and configure Vim for both root and appdev
 echo -e "${YELLOW}Setting up Vim...${NC}"
-apt-get install -y vim
 
 # Function to setup vim config
 setup_vim_config() {

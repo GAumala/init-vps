@@ -89,13 +89,6 @@ EOL
 
 sysctl -p
 
-# 6. Set up AIDE (file integrity monitoring)
-echo -e "${YELLOW}Setting up file integrity monitoring...${NC}"
-apt-get install -y aide
-aideinit
-mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-
-
 echo -e "${GREEN}Security hardening complete!${NC}"
 echo -e "Additional security measures applied:"
 echo -e "  - Secure file permissions"
@@ -103,4 +96,3 @@ echo -e "  - Disabled unnecessary services"
 echo -e "  - Automatic security updates"
 echo -e "  - Log rotation for security logs"
 echo -e "  - Kernel security parameters"
-echo -e "  - File integrity monitoring (AIDE)"
