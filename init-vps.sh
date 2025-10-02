@@ -172,6 +172,13 @@ fi
 # Add appdev user to www-data and sudo groups
 usermod -a -G www-data,sudo $NEW_USER
 
+# Set proper permissions for web directory
+echo -e "${YELLOW}Setting up web directory permissions...${NC}"
+chown -R www-data:www-data /var/www/html
+chmod -R 775 /var/www/html
+# Ensure new files inherit group ownership
+chmod g+s /var/www/html
+
 # Install and configure Vim for both root and appdev
 echo -e "${YELLOW}Setting up Vim...${NC}"
 
@@ -267,7 +274,7 @@ else
 fi
 
 # set defaul branch "main" globally for appdev user
-sudo -u appdev git config --global init.defaultBranch main
+sudo -u $NEW_USER git config --global init.defaultBranch main
 
 # Final message
 echo -e "${GREEN}Setup complete!${NC}"

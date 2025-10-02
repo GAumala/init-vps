@@ -39,3 +39,76 @@ autoload -U colors && colors
 
 # Simple prompt (minimal for server use)
 PROMPT='%F{green}%n@%m%f:%F{blue}%~%f$ '
+
+# git-checkout-local function for quickly checkout repos
+# in ~/repos to ~/workspace
+#
+# USAGE:
+#
+# Checkout latest HEAD
+# git-checkout-local my-project
+#
+# # Checkout specific branch
+# git-checkout-local my-project main
+# git-checkout-local my-project develop
+
+# Checkout specific tag or commit
+# git-checkout-local my-project v1.0.0
+
+function git-checkout-local() {
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: git-checkout-local NAME [BRANCH]"
+        echo "Available repositories:"
+        for repo in ~/repos/*.git; do
+            if [[ -d "$repo" ]]; then
+                echo "  $(basename ${repo%.git})"
+            fi
+        done
+        return 1
+    fi
+
+    local name=$1
+    local branch=${2:-HEAD}
+    local repo_path=~/repos/${name}.git
+    local worktree_path=~/workspace/${name}
+
+    if [[ ! -d "$repo_path" ]]; then
+        echo "Error: Repository $repo_path does not exist"
+        return 1
+    fi
+
+    mkdir -p "$worktree_path"
+    git --git-dir="$repo_path" --work-tree="$worktree_path" checkout -f "$branch"
+    cd "$worktree_path" || return 1
+}
+
+# Tab completion
+function _git-checkout-local() {
+    local state
+    _arguments \
+        '1: :->repos' \
+        '2: :->branches'
+
+    case $state in
+        repos)
+            local -a repos
+            for repo in ~/repos/*.git; do
+                if [[ -d "$repo" ]]; then
+                    repos+=("$(basename ${repo%.git})")
+                fi
+            done
+            _describe 'repositories' repos
+            ;;
+        branches)
+            local repo_name=${words[2]}
+            local repo_path=~/repos/${repo_name}.git
+            if [[ -d "$repo_path" ]]; then
+                local -a branches
+                branches=($(git --git-dir="$repo_path" for-each-ref --format='%(refname:short)' refs/heads/))
+                _describe 'branches' branches
+            fi
+            ;;
+    esac
+}
+
+compdef _git-checkout-local git-checkout-local
